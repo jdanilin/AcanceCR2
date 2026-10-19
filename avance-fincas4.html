@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Avance Fincas">
+<title>Avance de Fincas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: herramienta de una columna; arriba entrada, luego tablero, mensajes listos y detalle por finca */
+:root{
+ --bg:#f2f6f6;--surface:#ffffff;--ink:#13252a;--muted:#5b6f75;--line:#d6e1e2;--accent:#0f5c66;--accent-ink:#ffffff;--accent-soft:#e1eff0;
+ --red:#bf3029;--red-soft:#fbe9e7;--amber:#a86a0c;--amber-soft:#fcf1dc;--green:#1f7f52;--green-soft:#e2f4ea;--blue:#2a5fae;--blue-soft:#e5eefb;--gray:#6b7a80;--gray-soft:#edf1f2;
+ --display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
+ --body:"Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+ --bg:#0c1618;--surface:#132226;--ink:#e3eeef;--muted:#93a8ad;--line:#25393d;--accent:#4fb0bc;--accent-ink:#06191c;--accent-soft:#16343a;
+ --red:#f07a72;--red-soft:#3a1d1c;--amber:#e8b04e;--amber-soft:#3a2d14;--green:#5cc890;--green-soft:#163326;--blue:#7ea8ee;--blue-soft:#182b46;--gray:#9aabb0;--gray-soft:#1d2d31;
+ color-scheme:dark}}
+:root[data-theme="dark"]{
+ --bg:#0c1618;--surface:#132226;--ink:#e3eeef;--muted:#93a8ad;--line:#25393d;--accent:#4fb0bc;--accent-ink:#06191c;--accent-soft:#16343a;
+ --red:#f07a72;--red-soft:#3a1d1c;--amber:#e8b04e;--amber-soft:#3a2d14;--green:#5cc890;--green-soft:#163326;--blue:#7ea8ee;--blue-soft:#182b46;--gray:#9aabb0;--gray-soft:#1d2d31;
+ color-scheme:dark}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;
+ padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 40px}
+.wrap{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+header{padding-block:20px 4px;display:flex;flex-direction:column;gap:2px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:700}
+h1{font-family:var(--display);font-size:32px;line-height:1.05;margin:0;text-wrap:balance}
+h2{font-family:var(--display);font-size:22px;margin:0;text-wrap:balance}
+.sub{color:var(--muted);font-size:14px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+label.t{font-weight:700}
+.hint{font-size:13px;color:var(--muted)}
+textarea{width:100%;min-height:140px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:15px/1.4 var(--body);color:var(--ink);background:var(--bg);resize:vertical}
+textarea:focus,button:focus-visible,a.btn:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button,a.btn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:10px 14px;font:600 15px var(--body);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;min-height:44px}
+button.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+a.wa{background:#1fa855;border-color:#1fa855;color:#fff}
+button.danger{color:var(--red)}
+button.danger.armed{background:var(--red);border-color:var(--red);color:#fff}
+.ex{background:var(--amber-soft);color:var(--amber);border-radius:10px;padding:8px 12px;font-size:14px;font-weight:600}
+/* tablero */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:2px}
+.tile .n{font-family:var(--display);font-size:32px;line-height:1;font-variant-numeric:tabular-nums}
+.tile .l{font-size:13px;color:var(--muted)}
+.tile.big{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.tile.big .l{color:var(--accent-ink);opacity:.85}
+.t-red .n{color:var(--red)}.t-amber .n{color:var(--amber)}.t-green .n{color:var(--green)}.t-gray .n{color:var(--gray)}.t-blue .n{color:var(--blue)}
+.bar{height:8px;border-radius:8px;background:var(--gray-soft);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:8px}
+.alerts{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.alert{border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.alert h3{margin:0;font-size:15px}
+.alert ul{margin:0;padding-left:18px;font-size:14px}
+.a-red{background:var(--red-soft)}.a-red h3{color:var(--red)}
+.a-amber{background:var(--amber-soft)}.a-amber h3{color:var(--amber)}
+.a-blue{background:var(--blue-soft)}.a-blue h3{color:var(--blue)}
+/* mensajes */
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tabs button{min-height:38px;padding:7px 12px;font-size:14px}
+.tabs button[aria-selected="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--ink)}
+select{min-height:40px;border:1px solid var(--line);border-radius:10px;padding:6px 10px;font:15px var(--body);background:var(--surface);color:var(--ink);max-width:100%}
+pre.msg{margin:0;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;white-space:pre-wrap;word-break:break-word;font:14px/1.45 var(--body);max-height:420px;overflow:auto}
+/* fincas */
+details.finca{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+details.finca>summary{list-style:none;cursor:pointer;padding:12px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+details.finca>summary::-webkit-details-marker{display:none}
+.dot{width:12px;height:12px;border-radius:50%;flex:none}
+.d-red{background:var(--red)}.d-amber{background:var(--amber)}.d-green{background:var(--green)}.d-gray{background:var(--gray)}
+.fname{font-weight:700;font-size:17px}
+.fmeta{color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}
+.fbar{flex:1 1 120px;min-width:90px}
+.orders{border-top:1px solid var(--line);padding:6px 14px 14px;display:flex;flex-direction:column;gap:0}
+.ord{padding:10px 0;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:5px}
+.ord:last-of-type{border-bottom:0}
+.ohead{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.onum{font-family:var(--mono);font-weight:500}
+.pill{font-size:12px;font-weight:700;border-radius:20px;padding:2px 9px}
+.p-comp{background:var(--green-soft);color:var(--green)}.p-nocumple{background:var(--red-soft);color:var(--red)}
+.p-proc{background:var(--amber-soft);color:var(--amber)}.p-sin{background:var(--gray-soft);color:var(--gray)}
+.p-ok{background:var(--blue-soft);color:var(--blue)}.p-esp{background:var(--amber-soft);color:var(--amber)}.p-no{background:var(--gray-soft);color:var(--gray)}
+.items{font-size:14px;color:var(--muted)}
+.items b{color:var(--ink);font-weight:600}
+.code{font-family:var(--mono);font-size:13px}
+.empty{text-align:center;color:var(--muted);padding:28px 10px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;font-weight:600;opacity:0;transition:opacity .25s;pointer-events:none;z-index:20;max-width:calc(100% - 32px)}
+.toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<header>
+ <span class="eyebrow">Producción y logística</span>
+ <h1>Avance de Fincas</h1>
+ <span class="sub" id="fecha"></span>
+</header>
+
+<section class="panel" aria-labelledby="lblTxt">
+ <label class="t" id="lblTxt" for="txt">Pega aquí los reportes de WhatsApp</label>
+ <span class="hint">Puedes pegar una o varias fincas juntas. Si una finca manda su reporte otra vez, se reemplaza con el más nuevo.</span>
+ <textarea id="txt" placeholder="Finca: Placeres
+Orden: 2356 - 100%
+5x36461 (buffer)
+Equipo: esperando
+Placa: esperando"></textarea>
+ <div class="row">
+  <button class="pri" id="btnAdd" type="button">Agregar reportes</button>
+  <button id="btnClear" type="button">Limpiar cuadro</button>
+ </div>
+</section>
+
+<div id="exBanner" class="ex" hidden>Estás viendo datos de ejemplo. Se borran solos cuando agregues tu primer reporte real.</div>
+
+<section id="board" class="wrap" style="gap:12px"></section>
+
+<section class="panel" id="msgPanel" aria-labelledby="msgTitle">
+ <h2 id="msgTitle">Mensajes listos para WhatsApp</h2>
+ <div class="tabs" role="tablist" id="tabs">
+  <button role="tab" type="button" data-k="general" aria-selected="true">🌱 General</button>
+  <button role="tab" type="button" data-k="prod" aria-selected="false">🏭 Producción</button>
+  <button role="tab" type="button" data-k="log" aria-selected="false">🚛 Logística</button>
+  <button role="tab" type="button" data-k="finca" aria-selected="false">🌱 Por finca</button>
+ </div>
+ <div class="row" id="fincaPick" hidden>
+  <label for="selFinca" class="hint">Finca:</label>
+  <select id="selFinca"></select>
+ </div>
+ <pre class="msg" id="msg"></pre>
+ <div class="row">
+  <button class="pri" id="btnCopy" type="button">Copiar mensaje</button>
+  <a class="btn wa" id="waLink" href="https://wa.me/" target="_blank" rel="noopener">Enviar por WhatsApp</a>
+ </div>
+ <span class="hint">Si el botón de WhatsApp no abre, usa "Copiar mensaje" y pégalo en el chat.</span>
+</section>
+
+<section class="wrap" style="gap:10px" aria-labelledby="fTitle">
+ <div class="row" style="justify-content:space-between">
+  <h2 id="fTitle">Detalle por finca</h2>
+ </div>
+ <div id="fincas" class="wrap" style="gap:10px"></div>
+</section>
+
+<section class="panel">
+ <h2>Herramientas</h2>
+ <div class="row">
+  <button id="btnExcel" type="button">Copiar tabla para Excel</button>
+  <button id="btnDemo" type="button">Cargar ejemplo</button>
+  <button class="danger" id="btnWipe" type="button">Borrar todo</button>
+ </div>
+ <span class="hint">"Copiar tabla para Excel" copia todas las órdenes; en Excel solo pega en la celda A1. Los datos se guardan en este teléfono.</span>
+</section>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+const KEY="avance_fincas_v1";
+const $=id=>document.getElementById(id);
+const DIAS=["dom","lun","mar","mié","jue","vie","sáb"];
+const ST={comp:{n:"Completa",e:"✅",o:0},nocumple:{n:"No cumple",e:"🔴",o:0},proc:{n:"En proceso",e:"🟡",o:0},sin:{n:"Sin iniciar",e:"⚪",o:0}};
+let db={fincas:{},ejemplo:false};
+let tab="general";
+
+function norm(s){return String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").trim()}
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function title(s){return String(s||"").trim().toLowerCase().replace(/(^|\s)\S/g,m=>m.toUpperCase())}
+function pad(n){return String(n).padStart(2,"0")}
+function now(){const d=new Date();return {d,hora:pad(d.getHours())+":"+pad(d.getMinutes()),fecha:DIAS[d.getDay()]+" "+pad(d.getDate())+"/"+pad(d.getMonth()+1)}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){}}
+function load(){try{const v=JSON.parse(localStorage.getItem(KEY)||"null");if(v&&v.fincas)db=v}catch(e){}}
+
+/* ---------- lectura de reportes ---------- */
+function parseItem(txt){
+ const n=norm(txt);
+ const q=n.match(/^(\d+(?:[.,]\d+)?)/);
+ const codes=n.match(/\d{3,}/g);
+ const code=codes?codes[codes.length-1]:"";
+ let unit=n.replace(/\(.*?\)/g," ").replace(/^(\d+(?:[.,]\d+)?)/,"").replace(code," ").replace(/\bx\b|×/g," ").replace(/^x/,"").replace(/buffer/g,"").replace(/\s+/g," ").trim();
+ return {txt:String(txt).trim(),qty:q?parseFloat(q[1].replace(",",".")):null,code:(q&&code&&code!==q[1])?code:"",unit,buffer:/buffer/.test(n)};
+}
+const LBL=/^(finca|orden|equipo|contenedor|placa|obs|observacion|observaciones|pendientes?|recorrido|estado|razon|nota)\b\s*:?\s*/;
+function parse(text){
+ const fincas=[];let f=null,o=null,mode="listo";
+ const closeO=()=>{if(o&&f){f.ordenes.push(o)}o=null};
+ const closeF=()=>{closeO();if(f&&f.ordenes.length)fincas.push(f);f=null};
+ String(text).split(/\r?\n/).forEach(raw=>{
+  const line=raw.replace(/^[\s*_~•\-–]+/,"").trim();if(!line)return;
+  const n=norm(line).replace(/^[^a-z0-9]+/,"");
+  const m=n.match(LBL);
+  if(m){
+   const lab=m[1];const ci=line.indexOf(":");
+   let v=(ci>=0?line.slice(ci+1):line.slice(m[0].length)).replace(/[*_]/g,"").trim();
+   if(lab==="finca"){closeF();f={nombre:title(v)||"Sin nombre",ordenes:[]};mode="listo";return}
+   if(!f)f={nombre:"Sin finca",ordenes:[]};
+   if(lab==="orden"){closeO();const num=(v.match(/^\s*([A-Za-z0-9\-]+?)(?=\s*(?:-|–|$|\s))/)||[,v])[1];const p=v.match(/(\d+(?:[.,]\d+)?)\s*%/);
+    o={num:num.trim(),pct:p?Math.min(100,parseFloat(p[1].replace(",","."))):null,listo:[],pend:[],equipo:"",placa:"",obs:"",recorrido:""};mode="listo";return}
+   if(!o){o={num:"—",pct:null,listo:[],pend:[],equipo:"",placa:"",obs:"",recorrido:""}}
+   if(lab.startsWith("pendiente")){mode="pend";if(v)o.pend.push(parseItem(v));return}
+   if(lab==="equipo"||lab==="contenedor"){o.equipo=v;return}
+   if(lab==="placa"){o.placa=v;return}
+   if(lab==="recorrido"){o.recorrido=v;return}
+   o.obs=o.obs?o.obs+" · "+v:v;return;
+  }
+  if(!f)return;
+  if(!o){o={num:"—",pct:null,listo:[],pend:[],equipo:"",placa:"",obs:"",recorrido:""}}
+  (mode==="pend"?o.pend:o.listo).push(parseItem(line));
+ });
+ closeF();
+ return fincas;
+}
+
+/* ---------- reglas ---------- */
+function est(o){
+ const s=norm(o.obs);
+ if(o.pct!=null&&o.pct>=100)return "comp";
+ if(/no cumple|no va a cumplir|incumpl/.test(s))return "nocumple";
+ if((o.pct===0||o.pct==null)&&!o.listo.length)return "sin";
+ if(o.pct===0)return "sin";
+ return "proc";
+}
+function eq(v){const s=norm(v);if(!s)return "esp";if(/^no\b|no se espera|no espera|no aplica|n\/a/.test(s))return "no";if(/esper|pend|sin |falta|^-$/.test(s))return "esp";return "ok"}
+function compromiso(o){const s=norm(o.obs);const m=s.match(/(\d{1,2})[:.h](\d{2})/);return (m&&/cumple|sale|salida|lista|hora/.test(s)&&!/no cumple/.test(s))?pad(m[1])+":"+m[2]:""}
+function pct(o){return o.pct==null?0:o.pct}
+function fincaPct(f){return f.ordenes.length?Math.round(f.ordenes.reduce((a,o)=>a+pct(o),0)/f.ordenes.length):0}
+function fincaSt(f){const s=f.ordenes.map(est);if(s.includes("nocumple"))return "red";if(s.every(x=>x==="comp"))return "green";if(s.every(x=>x==="sin"))return "gray";return "amber"}
+const FE={red:"🔴",amber:"🟡",green:"🟢",gray:"⚪"};
+const FO={red:0,amber:1,gray:2,green:3};
+function bar(p){const k=Math.round(p/10);return "▓".repeat(k)+"░".repeat(10-k)}
+
+function all(){
+ const F=Object.values(db.fincas).sort((a,b)=>FO[fincaSt(a)]-FO[fincaSt(b)]||fincaPct(a)-fincaPct(b)||a.nombre.localeCompare(b.nombre));
+ const O=[];F.forEach(f=>f.ordenes.forEach(o=>O.push({f,o,st:est(o),e:eq(o.equipo),p:eq(o.placa),h:compromiso(o)})));
+ const c={comp:0,nocumple:0,proc:0,sin:0};O.forEach(x=>c[x.st]++);
+ const e={ok:0,esp:0,no:0};O.forEach(x=>e[x.e]++);
+ const placas=O.filter(x=>x.p==="esp").length;
+ const avance=O.length?Math.round(O.reduce((a,x)=>a+pct(x.o),0)/O.length):0;
+ const nocumple=O.filter(x=>x.st==="nocumple");
+ const compSinEq=O.filter(x=>x.st==="comp"&&x.e==="esp");
+ const horas=O.filter(x=>x.h&&x.st!=="comp").sort((a,b)=>a.h.localeCompare(b.h));
+ const prod={};O.forEach(x=>x.o.pend.forEach(it=>{const k=it.code||it.txt;if(!prod[k])prod[k]={k,unit:it.unit,qty:0,sinNum:false};if(it.qty!=null)prod[k].qty+=it.qty;else prod[k].sinNum=true}));
+ const P=Object.values(prod).sort((a,b)=>b.qty-a.qty);
+ return {F,O,c,e,placas,avance,nocumple,compSinEq,horas,P};
+}
+function porFinca(A){return A.F.map(f=>{const o=f.ordenes.filter(o=>eq(o.equipo)==="esp").map(o=>o.num);return {n:f.nombre,k:o.length,o}}).filter(x=>x.k).sort((a,b)=>b.k-a.k)}
+function itemsTxt(arr){return arr.map(i=>i.txt).join(", ")}
+function toText(f){
+ let t="Finca: "+f.nombre+"\n";
+ f.ordenes.forEach(o=>{
+  t+="\nOrden: "+o.num+(o.pct!=null?" - "+fmt(o.pct)+"%":"")+"\n";
+  o.listo.forEach(i=>t+=i.txt+"\n");
+  if(o.pend.length){t+="Pendiente:\n";o.pend.forEach(i=>t+=i.txt+"\n")}
+  if(o.equipo)t+="Equipo: "+o.equipo+"\n";
+  if(o.placa)t+="Placa: "+o.placa+"\n";
+  if(o.recorrido)t+="Recorrido: "+o.recorrido+"\n";
+  if(o.obs)t+="Obs: "+o.obs+"\n";
+ });
+ return t.trim();
+}
+
+/* ---------- mensajes ---------- */
+function head(t){const n=now();return "*"+t+"*\n📅 "+n.fecha+" · "+n.hora+"\n"}
+function msgGeneral(A){
+ let t=head("🌱 AVANCE DE FINCAS")+A.F.length+" fincas · "+A.O.length+" órdenes\n\n";
+ t+="*📊 AVANCE GENERAL: "+A.avance+"%*\n✅ Completas: "+A.c.comp+"\n🟡 En proceso: "+A.c.proc+"\n🔴 No cumplen: "+A.c.nocumple+"\n⚪ Sin iniciar: "+A.c.sin+"\n\n";
+ t+="*🚛 EQUIPOS*\n🚛 Asignados: "+A.e.ok+"\n⏳ Esperando equipo: "+A.e.esp+"\n➖ No esperan: "+A.e.no+"\n🪪 Placas pendientes: "+A.placas+"\n";
+ if(A.nocumple.length){t+="\n*⚠️ ALERTAS: NO CUMPLEN*\n";A.nocumple.forEach(x=>t+="🔴 "+x.f.nombre+" · "+x.o.num+" ("+pct(x.o)+"%)"+(x.o.pend.length?" · faltan "+itemsTxt(x.o.pend):"")+"\n")}
+ if(A.compSinEq.length){t+="\n*📦 COMPLETAS SIN EQUIPO*\n";A.compSinEq.forEach(x=>t+="⏳ "+x.f.nombre+" · "+x.o.num+"\n")}
+ if(A.horas.length){t+="\n*⏰ COMPROMISOS DE HOY*\n";A.horas.forEach(x=>t+=x.h+" · "+x.f.nombre+" "+x.o.num+"\n")}
+ t+="\n*🌱 POR FINCA*\n";
+ A.F.forEach(f=>t+=FE[fincaSt(f)]+" "+f.nombre+" · "+f.ordenes.length+" órd · "+fincaPct(f)+"%\n");
+ t+="\n🔴 No cumple · 🟡 En proceso · 🟢 Lista";
+ return t;
+}
+function msgProd(A){
+ const comp=A.c.comp;
+ let t=head("🏭 PRODUCCIÓN")+"Avance: *"+A.avance+"%* · "+comp+" de "+A.O.length+" órdenes listas\n";
+ if(A.nocumple.length){t+="\n*🔴 PRIORIDAD 1: NO CUMPLEN*\n";A.nocumple.forEach((x,i)=>t+=(i+1)+". "+x.f.nombre+" · "+x.o.num+" ("+pct(x.o)+"%)"+(x.o.pend.length?" → "+itemsTxt(x.o.pend):"")+"\n")}
+ if(A.horas.length){t+="\n*⏰ PRIORIDAD 2: CON HORA HOY*\n";A.horas.forEach(x=>t+=x.h+" · "+x.f.nombre+" "+x.o.num+(x.o.pend.length?" → "+itemsTxt(x.o.pend):"")+"\n")}
+ const proc=A.O.filter(x=>(x.st==="proc"||x.st==="sin")&&!x.h&&x.o.pend.length);
+ if(proc.length){t+="\n*🟡 PRIORIDAD 3: EN PROCESO*\n";proc.forEach(x=>t+=x.f.nombre+" "+x.o.num+" ("+pct(x.o)+"%) → "+itemsTxt(x.o.pend)+"\n")}
+ if(A.P.length){
+  t+="\n*📦 FALTA PRODUCIR*\n";let tot=0;
+  A.P.forEach(p=>{tot+=p.qty;const lab=(p.k+(p.unit?" "+p.unit:"")).slice(0,22);t+=lab+" ···· *"+fmt(p.qty)+"*"+(p.sinNum?" +":"")+"\n"});
+  t+="*Total: "+fmt(tot)+"*\n";
+ }
+ if(!A.nocumple.length&&!A.horas.length&&!A.P.length)t+="\n✅ Nada pendiente de producir.";
+ return t.trim();
+}
+function msgLog(A){
+ let t=head("🚛 LOGÍSTICA");
+ if(A.compSinEq.length){t+="\n*⚠️ URGENTE: LISTAS SIN EQUIPO*\n";A.compSinEq.forEach(x=>t+="• "+x.f.nombre+" "+x.o.num+"\n")}
+ t+="\n*📊 EQUIPOS*\n✅ Asignados: "+A.e.ok+"\n⏳ Faltan: *"+A.e.esp+"*\n➖ No esperan: "+A.e.no+"\n🪪 Placas pendientes: *"+A.placas+"*\n";
+ if(A.horas.length){t+="\n*⏰ SALIDAS CON HORA*\n";A.horas.forEach(x=>t+=x.h+" · "+x.f.nombre+" "+x.o.num+(x.e==="ok"?" ("+x.o.equipo+")":" (sin equipo)")+"\n")}
+ const porF=porFinca(A);
+ if(porF.length){t+="\n*🚛 EQUIPOS QUE FALTAN POR FINCA*\n";porF.forEach(x=>t+="• *"+x.n+"* · "+x.k+" ("+x.o.join(", ")+")\n")}
+ const placas=A.O.filter(x=>x.e==="ok"&&x.p==="esp");
+ if(placas.length){t+="\n*🪪 CON EQUIPO, ESPERANDO PLACA*\n";placas.forEach(x=>t+=x.f.nombre+" "+x.o.num+" · "+x.o.equipo+"\n")}
+ return t.trim();
+}
+function msgFinca(f){
+ if(!f)return "No hay fincas cargadas.";
+ let t="*🌱 "+f.nombre.toUpperCase()+"*\n"+f.ordenes.length+" órdenes · Avance "+fincaPct(f)+"%\n━━━━━━━━━━━━━━\n";
+ const ord=f.ordenes.slice().sort((a,b)=>({nocumple:0,proc:1,sin:2,comp:3}[est(a)]-{nocumple:0,proc:1,sin:2,comp:3}[est(b)]));
+ ord.forEach(o=>{
+  const s=est(o),h=compromiso(o);
+  t+="\n"+ST[s].e+" *Orden "+o.num+"* · "+pct(o)+"%"+(s==="nocumple"?" · NO CUMPLE":"")+(h?" · cumple "+h:"")+"\n"+bar(pct(o))+"\n";
+  if(o.listo.length)t+="Listo: "+itemsTxt(o.listo)+"\n";
+  if(o.pend.length)t+="⏳ Falta: "+itemsTxt(o.pend)+"\n";
+  t+="🚛 "+(eq(o.equipo)==="ok"?o.equipo:(o.equipo||"Sin dato"))+"\n🪪 Placa: "+(o.placa||"Sin dato")+"\n";
+  const extra=o.obs.replace(/no cumple/ig,"").replace(/cumple\s*\d{1,2}[:.]\d{2}/ig,"").replace(/^[\s·]+|[\s·]+$/g,"");
+  if(extra)t+="📝 "+extra+"\n";
+ });
+ return t.trim();
+}
+function fmt(n){return Number.isInteger(n)?String(n):n.toFixed(1)}
+
+/* ---------- pantalla ---------- */
+function render(){
+ const A=all();const n=now();
+ $("fecha").textContent=n.fecha+" · actualizado "+n.hora+" · "+A.F.length+" fincas · "+A.O.length+" órdenes";
+ $("exBanner").hidden=!db.ejemplo;
+ const B=$("board");
+ if(!A.O.length){B.innerHTML='<div class="panel empty">Todavía no hay reportes. Pega los mensajes de las fincas arriba y toca "Agregar reportes".</div>';$("fincas").innerHTML="";$("msgPanel").hidden=true;return}
+ $("msgPanel").hidden=false;
+ let h='<div class="tiles">';
+ h+=`<div class="tile big"><span class="n">${A.avance}%</span><span class="l">Avance general</span></div>`;
+ h+=`<div class="tile t-green"><span class="n">${A.c.comp}</span><span class="l">✅ Completas</span></div>`;
+ h+=`<div class="tile t-amber"><span class="n">${A.c.proc}</span><span class="l">🟡 En proceso</span></div>`;
+ h+=`<div class="tile t-red"><span class="n">${A.c.nocumple}</span><span class="l">🔴 No cumplen</span></div>`;
+ h+=`<div class="tile t-gray"><span class="n">${A.c.sin}</span><span class="l">⚪ Sin iniciar</span></div>`;
+ h+=`<div class="tile t-blue"><span class="n">${A.e.ok}</span><span class="l">🚛 Con equipo</span></div>`;
+ h+=`<div class="tile t-amber"><span class="n">${A.e.esp}</span><span class="l">⏳ Esperando equipo</span></div>`;
+ h+=`<div class="tile t-amber"><span class="n">${A.placas}</span><span class="l">🪪 Placas pendientes</span></div>`;
+ h+='</div>';
+ let al="";
+ if(A.nocumple.length)al+=`<div class="alert a-red"><h3>🔴 No cumplen (${A.nocumple.length})</h3><ul>${A.nocumple.map(x=>`<li><b>${esc(x.f.nombre)}</b> · <span class="code">${esc(x.o.num)}</span> (${pct(x.o)}%)${x.o.pend.length?" · falta "+esc(itemsTxt(x.o.pend)):""}</li>`).join("")}</ul></div>`;
+ if(A.compSinEq.length)al+=`<div class="alert a-amber"><h3>📦 Completas sin equipo (${A.compSinEq.length})</h3><ul>${A.compSinEq.map(x=>`<li><b>${esc(x.f.nombre)}</b> · <span class="code">${esc(x.o.num)}</span></li>`).join("")}</ul></div>`;
+ if(A.horas.length)al+=`<div class="alert a-blue"><h3>⏰ Compromisos de hoy (${A.horas.length})</h3><ul>${A.horas.map(x=>`<li><b>${x.h}</b> · ${esc(x.f.nombre)} <span class="code">${esc(x.o.num)}</span> (${pct(x.o)}%)</li>`).join("")}</ul></div>`;
+ const pf=porFinca(A);
+ if(pf.length)al+=`<div class="alert a-amber"><h3>🚛 Esperando equipo por finca (${A.e.esp})</h3><ul>${pf.map(x=>`<li><b>${esc(x.n)}</b> · ${x.k} · <span class="code">${esc(x.o.join(", "))}</span></li>`).join("")}</ul></div>`;
+ if(al)h+='<div class="alerts">'+al+'</div>';
+ B.innerHTML=h;
+
+ // fincas
+ let fh="";
+ A.F.forEach((f,i)=>{
+  const s=fincaSt(f),p=fincaPct(f);
+  fh+=`<details class="finca"${s==="red"?" open":""}><summary><span class="dot d-${s}"></span><span class="fname">${esc(f.nombre)}</span><span class="fmeta">${f.ordenes.length} órd · ${p}%${f.hora?" · "+esc(f.hora):""}</span><span class="fbar bar"><i style="width:${p}%"></i></span></summary><div class="orders">`;
+  f.ordenes.forEach(o=>{
+   const st=est(o),e=eq(o.equipo),pl=eq(o.placa),hh=compromiso(o);
+   fh+=`<div class="ord"><div class="ohead"><span class="onum">${esc(o.num)}</span><span class="pill p-${st}">${ST[st].n} · ${pct(o)}%</span>${hh?`<span class="pill p-ok">⏰ ${hh}</span>`:""}<span class="pill p-${e}">🚛 ${e==="ok"?esc(o.equipo):esc(o.equipo||"Sin dato")}</span><span class="pill p-${pl}">🪪 ${esc(o.placa||"Sin dato")}</span></div>`;
+   if(o.listo.length)fh+=`<div class="items"><b>Listo:</b> ${esc(itemsTxt(o.listo))}</div>`;
+   if(o.pend.length)fh+=`<div class="items"><b>Falta:</b> ${esc(itemsTxt(o.pend))}</div>`;
+   if(o.obs)fh+=`<div class="items"><b>Obs:</b> ${esc(o.obs)}</div>`;
+   fh+='</div>';
+  });
+  fh+=`<div class="row" style="padding-top:8px"><button type="button" data-edit="${esc(f.key)}">✏️ Editar</button><button class="danger" type="button" data-del="${esc(f.key)}">Quitar finca</button></div></div></details>`;
+ });
+ $("fincas").innerHTML=fh;
+
+ // selector finca
+ const sel=$("selFinca"),cur=sel.value;
+ sel.innerHTML=A.F.map(f=>`<option value="${esc(f.key)}">${esc(f.nombre)}</option>`).join("");
+ if(cur&&db.fincas[cur])sel.value=cur;
+ renderMsg(A);
+}
+function currentMsg(A){
+ A=A||all();
+ if(tab==="prod")return msgProd(A);
+ if(tab==="log")return msgLog(A);
+ if(tab==="finca")return msgFinca(db.fincas[$("selFinca").value]||A.F[0]);
+ return msgGeneral(A);
+}
+function renderMsg(A){
+ const t=currentMsg(A);
+ $("msg").textContent=t;
+ $("waLink").href="https://wa.me/?text="+encodeURIComponent(t);
+ $("fincaPick").hidden=tab!=="finca";
+ document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.k===tab?"true":"false"));
+}
+
+/* ---------- acciones ---------- */
+function addText(text,ejemplo){
+ const F=parse(text);
+ if(!F.length){toast("No encontré reportes. Revisa que traigan Finca y Orden.");return 0}
+ if(!ejemplo&&db.ejemplo){db={fincas:{},ejemplo:false}}
+ const h=now().hora;
+ F.forEach(f=>{const key=norm(f.nombre).replace(/\s+/g,"-");db.fincas[key]={...f,key,hora:h}});
+ db.ejemplo=!!ejemplo&&(db.ejemplo||!Object.keys(db.fincas).length||true);
+ if(!ejemplo)db.ejemplo=false;
+ save();render();
+ const n=F.reduce((a,f)=>a+f.ordenes.length,0);
+ if(!ejemplo)toast(F.length+" finca(s) y "+n+" orden(es) agregadas");
+ return F.length;
+}
+$("btnAdd").onclick=()=>{if(addText($("txt").value,false))$("txt").value=""};
+$("btnClear").onclick=()=>{$("txt").value="";$("txt").focus()};
+$("tabs").onclick=e=>{const b=e.target.closest("button");if(!b)return;tab=b.dataset.k;renderMsg()};
+$("selFinca").onchange=()=>renderMsg();
+$("btnCopy").onclick=()=>copy($("msg").textContent,"Mensaje copiado. Pégalo en WhatsApp",$("msg"));
+$("btnExcel").onclick=()=>{
+ const A=all();const n=new Date();const f=n.getFullYear()+"-"+pad(n.getMonth()+1)+"-"+pad(n.getDate());
+ let t="Fecha\tFinca\tOrden\tAvance %\tEstado\tCompromiso\tEquipo\tPlaca\tListo\tPendiente\tObs\n";
+ A.O.forEach(x=>{t+=[f,x.f.nombre,x.o.num,pct(x.o),ST[x.st].n,x.h,x.o.equipo,x.o.placa,itemsTxt(x.o.listo),itemsTxt(x.o.pend),x.o.obs].map(v=>String(v==null?"":v).replace(/[\t\n]/g," ")).join("\t")+"\n"});
+ copy(t,"Tabla copiada. Pégala en Excel en la celda A1",null);
+};
+$("btnDemo").onclick=()=>{db={fincas:{},ejemplo:true};addText(DEMO,true);toast("Ejemplo cargado")};
+armed($("btnWipe"),"¿Seguro? Toca otra vez para borrar",()=>{db={fincas:{},ejemplo:false};save();render();toast("Todo borrado")});
+$("fincas").addEventListener("click",e=>{
+ const ed=e.target.closest("button[data-edit]");
+ if(ed){const f=db.fincas[ed.dataset.edit];if(!f)return;$("txt").value=toText(f);$("txt").scrollIntoView({behavior:"smooth",block:"center"});$("txt").focus();toast("Corrige el dato y toca Agregar reportes");return}
+ const b=e.target.closest("button[data-del]");if(!b)return;
+ if(b.classList.contains("armed")){delete db.fincas[b.dataset.del];save();render();toast("Finca quitada");return}
+ b.classList.add("armed");b.textContent="Toca otra vez para quitar";
+ setTimeout(()=>{if(document.body.contains(b)){b.classList.remove("armed");b.textContent="Quitar finca"}},3500);
+});
+function armed(btn,msg,fn){const orig=btn.textContent;let t;btn.onclick=()=>{if(btn.classList.contains("armed")){clearTimeout(t);btn.classList.remove("armed");btn.textContent=orig;fn();return}btn.classList.add("armed");btn.textContent=msg;t=setTimeout(()=>{btn.classList.remove("armed");btn.textContent=orig},3500)}}
+function copy(t,ok,el){
+ const fallback=()=>{
+  if(el){const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r);toast("Texto seleccionado: toca Copiar")}
+  else{const a=document.createElement("textarea");a.value=t;a.style.position="fixed";a.style.opacity="0";document.body.appendChild(a);a.select();let done=false;try{done=document.execCommand("copy")}catch(e){}a.remove();toast(done?ok:"No se pudo copiar en este navegador")}
+ };
+ try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(()=>toast(ok),fallback)}else fallback()}catch(e){fallback()}
+}
+let tt;function toast(m){const e=$("toast");e.textContent=m;e.classList.add("on");clearTimeout(tt);tt=setTimeout(()=>e.classList.remove("on"),2600)}
+
+const DEMO=`Finca: Placeres
+Orden: 2356 - 100%
+5x36461 (buffer)
+Equipo: esperando
+Placa: esperando
+
+Orden: 0775 - 29%
+5x531 (buffer)
+10 cajas 531
+Pendiente:
+12 cb 531
+Equipo: MCDU110069-9
+Placa: esperando
+Obs: no cumple
+
+Orden: 0138 - 40%
+5 am 400
+3 kilo 22097
+Pendiente:
+11 am 400
+1 kilo 22097
+Equipo: SILU701918-2
+Placa: esperando
+Obs: cumple 14:00
+
+Orden: 1042 - 20%
+4 hol 6859 (buffer)
+30 cajas Hola 6859
+Pendiente:
+10 hola 6859
+Equipo: esperando
+Placa: no se espera
+Obs: conectado
+
+Orden: 7268 - 0%
+Pendiente:
+3 hola 167
+Equipo: no espera
+Placa: no espera
+Obs: conectado
+
+Finca: Santa Rosa (ejemplo)
+Orden: 1120 - 10%
+2 cb 531
+Pendiente:
+18 cb 531
+Equipo: esperando
+Placa: esperando
+Obs: no cumple
+
+Orden: 1124 - 65%
+13 am 400
+Pendiente:
+7 am 400
+Equipo: TGHU552310-1
+Placa: P-48211
+Obs: cumple 11:30
+
+Finca: Formosa (ejemplo)
+Orden: 5521 - 100%
+20 cajas 6859
+Equipo: esperando
+Placa: esperando
+
+Orden: 5530 - 100%
+16 kilo 22097
+Equipo: MSKU776120-3
+Placa: P-33019
+
+Finca: Bonanza (ejemplo)
+Orden: 3301 - 55%
+11 hola 167
+Pendiente:
+9 hola 167
+Equipo: CMAU901244-6
+Placa: esperando
+Obs: cumple 15:30`;
+
+load();
+if(db.ejemplo){db={fincas:{},ejemplo:false};save()}
+render();
+})();
+</script>
+
+</body>
+</html>
